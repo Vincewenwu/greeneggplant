@@ -53,7 +53,7 @@ public class TestJobAction {
 		borrow=iBorrowService.list("from Borrow");
 		if(borrow!=null && borrow.size()>0){
 			for(int i =0;i<borrow.size();i++){
-			 if(!borrow.get(i).getWhetherReturn()){   //¶ÁÈ¡Ã×ÓĞ»¹µÄÊé
+			 if(!borrow.get(i).getWhetherReturn()){   //è¯»å–ç±³æœ‰è¿˜çš„ä¹¦
 				String sql="SELECT `user`.userID,`user`.roleID,role.borrowBooksLength,borrow.borrowDate,borrow.borrowID,`user`.mail,`user`.userName,book.bookName FROM `user` INNER JOIN role ON `user`.roleID = role.roleID INNER JOIN borrow ON borrow.userID = `user`.userID INNER JOIN book ON book.bookID = borrow.bookID where borrow.borrowID= '"+borrow.get(i).getBorrowId()+"' ";
 				Pager<UserBorrow> userinfo=iUserService.getPagerBySql1(sql, null, null, 1, borrow.size(), null, null);
 				userinfolist = userinfo.getDatas();
@@ -61,24 +61,24 @@ public class TestJobAction {
 					long days=fanhuishifouguoqi(userinfolist.get(0).getBorrowDate().toString());
 					if(days-userinfolist.get(0).getBorrowBooksLength()>0){
 						System.out.println(days-userinfolist.get(0).getBorrowBooksLength());
-						//¸üĞÂ¶©µ¥×´Ì¬  ÓÃ»§ÏÂµ¥³¬¹ı×Ô¶¨ÒåÌìÊıÌìÎ´Ö§¸¶ ×Ô¶¯¹Ø±Õ¸Ã¶©µ¥
+						//æ›´æ–°è®¢å•çŠ¶æ€  ç”¨æˆ·ä¸‹å•è¶…è¿‡è‡ªå®šä¹‰å¤©æ•°å¤©æœªæ”¯ä»˜ è‡ªåŠ¨å…³é—­è¯¥è®¢å•
 						borrow1=new Borrow();
 						borrow1=iBorrowService.load(userinfolist.get(0).getBorrowID());
-						System.out.println(borrow1+"ĞÄÀÛ ");
+						System.out.println(borrow1+"å¿ƒç´¯ ");
 						borrow1.setWhetherExtended(true);
 						iBorrowService.update(borrow1);
-						System.out.println("¸üĞÂ³É¹¦");
-						//·¢ËÍÓÊ¼ş
+						System.out.println("æ›´æ–°æˆåŠŸ");
+						//å‘é€é‚®ä»¶
 					}
 					if((days-3)-userinfolist.get(0).getBorrowBooksLength()>0){
 						Mailmessage mail=new Mailmessage();
 						mail.setUserId(userinfolist.get(0).getUserID());
 						mail.setRemail(userinfolist.get(0).getMail());
 						mail.setSendmail(userinfolist.get(0).getMail());
-						mail.setMailtitle("ÄúºÃ£¡"+userinfolist.get(0).getUserName()+"¸ù¾İÄú"+userinfolist.get(0).getBorrowDate()+"ÊéÃûÎª¡¶"+userinfolist.get(0).getBookName()+"¡·ÈÕµÄ½èÊé¼ÇÂ¼,ÏÖÔÚ¿ìµ½ÆÚÁË£¬ÇëÔÚÈı¸ö¹¤×÷ÈÕÖ®ÄÚ»¹Êé£¬Ğ»Ğ»£¡£¡£¡");
+						mail.setMailtitle("æ‚¨å¥½ï¼"+userinfolist.get(0).getUserName()+"æ ¹æ®æ‚¨"+userinfolist.get(0).getBorrowDate()+"ä¹¦åä¸ºã€Š"+userinfolist.get(0).getBookName()+"ã€‹æ—¥çš„å€Ÿä¹¦è®°å½•,ç°åœ¨å¿«åˆ°æœŸäº†ï¼Œè¯·åœ¨ä¸‰ä¸ªå·¥ä½œæ—¥ä¹‹å†…è¿˜ä¹¦ï¼Œè°¢è°¢ï¼ï¼ï¼");
 						mail.setContextType("pop3");
-						mail.setFilename("ÎŞ");
-						mail.setFilename1("ÎŞ");
+						mail.setFilename("æ— ");
+						mail.setFilename1("æ— ");
 						mail.setCreationtime(BorrowDate());
 						mail.setExpecttosendtime(BorrowDate());
 						mailmessage= imailService.list("from Mailmessage where userId="+userinfolist.get(0).getUserID());
@@ -86,8 +86,8 @@ public class TestJobAction {
 						mail.setActualtime(BorrowDate());
 						String title=mail.getMailtitle();
 						imailService.add(mail);
-						mail(userinfolist.get(0).getMail(),title);//·¢ËÍÓÊ¼ş
-						System.out.println("ĞÂÔö³É¹¦");
+						mail(userinfolist.get(0).getMail(),title);//å‘é€é‚®ä»¶
+						System.out.println("æ–°å¢æˆåŠŸ");
 					}
 				}
 			 }
@@ -95,7 +95,7 @@ public class TestJobAction {
 		}
 	}
 	/**
-	 * ¼ÆËã½èÔÄÌìÊı
+	 * è®¡ç®—å€Ÿé˜…å¤©æ•°
 	 * @param date
 	 * @return
 	 */
@@ -105,8 +105,8 @@ public class TestJobAction {
         Date two; 
         long days=0;  
         try {  
-            one = df.parse(date); /*½èÔÄÊ±¼ä */
-            two = df.parse(BorrowDate().toString());  /* µ±Ç°Ê±¼ä*/
+            one = df.parse(date); /*å€Ÿé˜…æ—¶é—´ */
+            two = df.parse(BorrowDate().toString());  /* å½“å‰æ—¶é—´*/
             long time1 = one.getTime();  
             long time2 = two.getTime();  
             long diff = 0 ;  
@@ -121,7 +121,7 @@ public class TestJobAction {
 		return days;
 	}
 	/**
-	 * µ±Ç°Ê±¼ä
+	 * å½“å‰æ—¶é—´
 	 * @return
 	 */
 	public Timestamp BorrowDate(){
@@ -142,16 +142,16 @@ public class TestJobAction {
 	
 	public void mail(String mail,String title){
 		 Properties prop = new Properties();
-	        // ¿ªÆôdebugµ÷ÊÔ£¬ÒÔ±ãÔÚ¿ØÖÆÌ¨²é¿´
+	        // å¼€å¯debugè°ƒè¯•ï¼Œä»¥ä¾¿åœ¨æ§åˆ¶å°æŸ¥çœ‹
 	        prop.setProperty("mail.debug", "true");
-	        // ÉèÖÃÓÊ¼ş·şÎñÆ÷Ö÷»úÃû
+	        // è®¾ç½®é‚®ä»¶æœåŠ¡å™¨ä¸»æœºå
 	        prop.setProperty("mail.host", "smtp.qq.com");
-	        // ·¢ËÍ·şÎñÆ÷ĞèÒªÉí·İÑéÖ¤
+	        // å‘é€æœåŠ¡å™¨éœ€è¦èº«ä»½éªŒè¯
 	        prop.setProperty("mail.smtp.auth", "true");
-	        // ·¢ËÍÓÊ¼şĞ­ÒéÃû³Æ
+	        // å‘é€é‚®ä»¶åè®®åç§°
 	        prop.setProperty("mail.transport.protocol", "smtp");
 
-	        // ¿ªÆôSSL¼ÓÃÜ£¬·ñÔò»áÊ§°Ü
+	        // å¼€å¯SSLåŠ å¯†ï¼Œå¦åˆ™ä¼šå¤±è´¥
 	        MailSSLSocketFactory sf = null;
 			try {
 				sf = new MailSSLSocketFactory();
@@ -163,10 +163,10 @@ public class TestJobAction {
 	        prop.put("mail.smtp.ssl.enable", "true");
 	        prop.put("mail.smtp.ssl.socketFactory", sf);
 
-	        // ´´½¨session
+	        // åˆ›å»ºsession
 	        Session session = Session.getInstance(prop);
 
-	        // Í¨¹ısessionµÃµ½transport¶ÔÏó
+	        // é€šè¿‡sessionå¾—åˆ°transportå¯¹è±¡
 	        Transport ts = null;
 			try {
 				ts = session.getTransport();
@@ -174,16 +174,16 @@ public class TestJobAction {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
-	        // Á¬½ÓÓÊ¼ş·şÎñÆ÷£ºÓÊÏäÀàĞÍ£¬ÕÊºÅ£¬ÊÚÈ¨Âë´úÌæÃÜÂë£¨¸ü°²È«£©
+	        // è¿æ¥é‚®ä»¶æœåŠ¡å™¨ï¼šé‚®ç®±ç±»å‹ï¼Œå¸å·ï¼Œæˆæƒç ä»£æ›¿å¯†ç ï¼ˆæ›´å®‰å…¨ï¼‰
 	        try {
 				ts.connect("smtp.qq.com", "1010789554", "ukgyonykdfjpbfib");
 			} catch (MessagingException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
-	        // ºóÃæµÄ×Ö·ûÊÇÊÚÈ¨Âë£¬ÓÃqqÃÜÂëÊ§°ÜÁË
+	        // åé¢çš„å­—ç¬¦æ˜¯æˆæƒç ï¼Œç”¨qqå¯†ç å¤±è´¥äº†
 
-	        // ´´½¨ÓÊ¼ş
+	        // åˆ›å»ºé‚®ä»¶
 	        Message message = null;
 			try {
 				message = createSimpleMail(session,mail,title);
@@ -191,7 +191,7 @@ public class TestJobAction {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-	        // ·¢ËÍÓÊ¼ş
+	        // å‘é€é‚®ä»¶
 	        try {
 				ts.sendMessage(message, message.getAllRecipients());
 			} catch (MessagingException e) {
@@ -241,8 +241,8 @@ public class TestJobAction {
 		mail.setSendmail(userinfolist.get(0).getMail());
 		mail.setMailtitle(mohulbtName);
 		mail.setContextType("pop3");
-		mail.setFilename("ÎŞ");
-		mail.setFilename1("ÎŞ");
+		mail.setFilename("æ— ");
+		mail.setFilename1("æ— ");
 		mail.setCreationtime(BorrowDate());
 		mail.setExpecttosendtime(BorrowDate());
 		mail.setNumberofretries(1);
@@ -250,15 +250,15 @@ public class TestJobAction {
 		imailService.add(mail);
 		
 		 Properties prop = new Properties();
-	        // ¿ªÆôdebugµ÷ÊÔ£¬ÒÔ±ãÔÚ¿ØÖÆÌ¨²é¿´
+	        // å¼€å¯debugè°ƒè¯•ï¼Œä»¥ä¾¿åœ¨æ§åˆ¶å°æŸ¥çœ‹
 	        prop.setProperty("mail.debug", "true");
-	        // ÉèÖÃÓÊ¼ş·şÎñÆ÷Ö÷»úÃû
+	        // è®¾ç½®é‚®ä»¶æœåŠ¡å™¨ä¸»æœºå
 	        prop.setProperty("mail.host", "smtp.qq.com");
-	        // ·¢ËÍ·şÎñÆ÷ĞèÒªÉí·İÑéÖ¤
+	        // å‘é€æœåŠ¡å™¨éœ€è¦èº«ä»½éªŒè¯
 	        prop.setProperty("mail.smtp.auth", "true");
-	        // ·¢ËÍÓÊ¼şĞ­ÒéÃû³Æ
+	        // å‘é€é‚®ä»¶åè®®åç§°
 	        prop.setProperty("mail.transport.protocol", "smtp");
-	        // ¿ªÆôSSL¼ÓÃÜ£¬·ñÔò»áÊ§°Ü
+	        // å¼€å¯SSLåŠ å¯†ï¼Œå¦åˆ™ä¼šå¤±è´¥
 	        MailSSLSocketFactory sf = null;
 			try {
 				sf = new MailSSLSocketFactory();
@@ -270,10 +270,10 @@ public class TestJobAction {
 	        prop.put("mail.smtp.ssl.enable", "true");
 	        prop.put("mail.smtp.ssl.socketFactory", sf);
 
-	        // ´´½¨session
+	        // åˆ›å»ºsession
 	        Session session = Session.getInstance(prop);
 
-	        // Í¨¹ısessionµÃµ½transport¶ÔÏó
+	        // é€šè¿‡sessionå¾—åˆ°transportå¯¹è±¡
 	        Transport ts = null;
 			try {
 				ts = session.getTransport();
@@ -281,16 +281,16 @@ public class TestJobAction {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
-	        // Á¬½ÓÓÊ¼ş·şÎñÆ÷£ºÓÊÏäÀàĞÍ£¬ÕÊºÅ£¬ÊÚÈ¨Âë´úÌæÃÜÂë£¨¸ü°²È«£©
+	        // è¿æ¥é‚®ä»¶æœåŠ¡å™¨ï¼šé‚®ç®±ç±»å‹ï¼Œå¸å·ï¼Œæˆæƒç ä»£æ›¿å¯†ç ï¼ˆæ›´å®‰å…¨ï¼‰
 	        try {
-				ts.connect("smtp.qq.com", "1010789554", "ukgyonykdfjpbfib");
+				ts.connect("smtp.qq.com", "ä½ çš„æ‰£æ‰£", "æ‰£æ‰£æˆæƒç ");
 			} catch (MessagingException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
-	        // ºóÃæµÄ×Ö·ûÊÇÊÚÈ¨Âë£¬ÓÃqqÃÜÂëÊ§°ÜÁË
+	        // åé¢çš„å­—ç¬¦æ˜¯æˆæƒç ï¼Œç”¨qqå¯†ç å¤±è´¥äº†
 
-	        // ´´½¨ÓÊ¼ş
+	        // åˆ›å»ºé‚®ä»¶
 	        Message message = null;
 			try {
 				message = createSimpleMail(session,youxiang,mohulbtName);
@@ -298,7 +298,7 @@ public class TestJobAction {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-	        // ·¢ËÍÓÊ¼ş
+	        // å‘é€é‚®ä»¶
 	        try {
 				ts.sendMessage(message, message.getAllRecipients());
 			} catch (MessagingException e) {
@@ -321,21 +321,21 @@ public class TestJobAction {
 	}
 	  /**
      * @Method: createSimpleMail
-     * @Description: ´´½¨Ò»·âÖ»°üº¬ÎÄ±¾µÄÓÊ¼ş
+     * @Description: åˆ›å»ºä¸€å°åªåŒ…å«æ–‡æœ¬çš„é‚®ä»¶
      */
     public static MimeMessage createSimpleMail(Session session,String mail,String title)
             throws Exception {
-        // ´´½¨ÓÊ¼ş¶ÔÏó
+        // åˆ›å»ºé‚®ä»¶å¯¹è±¡
         MimeMessage message = new MimeMessage(session);
-        // Ö¸Ã÷ÓÊ¼şµÄ·¢¼şÈË
+        // æŒ‡æ˜é‚®ä»¶çš„å‘ä»¶äºº
         message.setFrom(new InternetAddress("1010789554@qq.com"));
-        // Ö¸Ã÷ÓÊ¼şµÄÊÕ¼şÈË
+        // æŒ‡æ˜é‚®ä»¶çš„æ”¶ä»¶äºº
         message.setRecipient(Message.RecipientType.TO, new InternetAddress(mail.toString().trim()));
-        // ÓÊ¼şµÄ±êÌâ
+        // é‚®ä»¶çš„æ ‡é¢˜
         message.setSubject(title);
-        // ÓÊ¼şµÄÎÄ±¾ÄÚÈİ
-        message.setContent("·¢ËÍÓÊ¼ş³É¹¦£¡", "text/html;charset=UTF-8");
-        // ·µ»Ø´´½¨ºÃµÄÓÊ¼ş¶ÔÏó
+        // é‚®ä»¶çš„æ–‡æœ¬å†…å®¹
+        message.setContent("å‘é€é‚®ä»¶æˆåŠŸï¼", "text/html;charset=UTF-8");
+        // è¿”å›åˆ›å»ºå¥½çš„é‚®ä»¶å¯¹è±¡
         return message;
   }
    
