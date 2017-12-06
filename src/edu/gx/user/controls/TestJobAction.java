@@ -176,7 +176,7 @@ public class TestJobAction {
 			}
 	        // 连接邮件服务器：邮箱类型，帐号，授权码代替密码（更安全）
 	        try {
-				ts.connect("smtp.qq.com", "1010789554", "ukgyonykdfjpbfib");
+				ts.connect("smtp.qq.com", "qq", "授权码");
 			} catch (MessagingException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
