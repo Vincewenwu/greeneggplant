@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project-module
+  type="WEB"
+  name="greeneggplant"
+  id="myeclipse.1489536757860"
+  context-root="/greeneggplant"
+  j2ee-spec="5.0"
+  archive="greeneggplant.war">
+  <attributes>
+    <attribute name="webrootdir" value="WebRoot" />
+  </attributes>
+</project-module>
+

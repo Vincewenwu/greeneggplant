@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE urlrewrite   
+  PUBLIC "-//tuckey.org//DTD UrlRewrite 4.0//EN"    
+   "http://www.tuckey.org/res/dtds/urlrewrite4.0.dtd">
+<urlrewrite>
+   <outbound-rule><!--    http://localhost:8080/urlrewrite/system/listBookLib.action   =>    http://localhost:8080/urlrewrite/system/listBookLib.html    -->
+  <from>^/([A-Za-z0-9]+)/([A-Za-z0-9]+)\.html$</from> 
+ <to>/$1/$2.action</to>
+  </outbound-rule>
+  <rule><!--        http://localhost:8080/urlrewrite/system/listBookLib.html        =>   
+       http://localhost:8080/urlrewrite/system/listBookLib.action         -->
+    <from>^/([A-Za-z0-9]+)/([A-Za-z0-9]+)\.html</from>
+    <to>/$1/$2.do</to>
+  </rule>
+  <rule><!--   http://localhost:8080/urlrewrite/system/viewBookLib.action?id=3  =>    http://localhost:8080/urlrewrite/system/viewBookLib/id-3.html   -->
+    <from>^/([A-Za-z0-9]+)/([A-Za-z0-9]+)/([A-Za-z0-9]+)-([A-Za-z0-9]+)\.html$</from>
+    <to>/$1/$2.do?$3=$4</to>
+  </rule>
+  <rule><!--   http://localhost:8080/urlrewrite/system/deleteItemsBookLib/ids13,14.html  =>    http://localhost:8080/urlrewrite/system/deleteItemsBookLib.action?id s=13,14   -->
+    <from>^/([A-Za-z0-9]+)/([A-Za-z0-9]+)/([A-Za-z0-9]+)-([A-Za-z0-9,]+)\.html$</from>
+    <to>/$1/$2.do?$3=$4</to>
+  </rule>
+  
+</urlrewrite>

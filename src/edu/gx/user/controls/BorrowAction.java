@@ -1,0 +1,708 @@
+package edu.gx.user.controls;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import net.sf.json.JSONObject;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.struts2.ServletActionContext;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import org.springframework.scheduling.quartz.QuartzJobBean;
+import org.springframework.stereotype.Controller;
+
+import com.opensymphony.xwork2.ActionContext;
+import com.opensymphony.xwork2.ActionSupport;
+
+import edu.gx.common.utils.MD5Util;
+import edu.gx.dao.service.IBookService;
+import edu.gx.dao.service.IBorrowService;
+import edu.gx.dao.service.IFineService;
+import edu.gx.dao.service.ILibraryService;
+import edu.gx.dao.service.ILibraryTypeService;
+import edu.gx.dao.service.ILosetlibraryService;
+import edu.gx.dao.service.IOverrecordService;
+import edu.gx.dao.service.IRoleService;
+import edu.gx.dao.service.IUserService;
+import edu.gx.user.model.Book;
+import edu.gx.user.model.Bookinfo;
+import edu.gx.user.model.Borrow;
+import edu.gx.user.model.Borrowinfo;
+import edu.gx.user.model.Fine;
+import edu.gx.user.model.Fineinfo;
+import edu.gx.user.model.Library;
+import edu.gx.user.model.Libraryinfo;
+import edu.gx.user.model.Librarytype;
+import edu.gx.user.model.Librarytypeinfo;
+import edu.gx.user.model.Loselibrary;
+import edu.gx.user.model.Overrecord;
+import edu.gx.user.model.Pager;
+import edu.gx.user.model.Role;
+import edu.gx.user.model.User;
+import edu.gx.user.model.UserBorrow;
+import edu.gx.user.model.Userinfo;
+@Scope("prototype")
+//@Controller("book.BookAction")
+public class BorrowAction {
+	
+	@Autowired
+	private IBookService iBookService;
+	@Autowired
+	private ILibraryTypeService iLibraryTypeService;
+	@Autowired
+	private IBorrowService iBorrowService;
+	@Autowired
+	private IUserService iUserService;
+	@Autowired
+	private ILosetlibraryService  iLosetlibraryService;
+	
+	private List<Librarytype> librarytype =null;
+	private List<Book> book =null;
+	private List<Borrow> borrow =null;
+	private Borrow borrow1 =null;
+	private  int count=0;
+	private  int size=5;
+	/**
+	 * 图书列表
+	 * @return
+	 */
+	public String borrow(){
+		List<Bookinfo> bookInfoList=null;
+		book=iBookService.list("from Book");
+		String sql="SELECT book.bookID,book.bookOnlyCoding,book.bookName,book.price,book.author,book.publishingCompany,book.publishTime,book.stock,book.abstruct,book.libraryPagination,book.buildTime,book.libraryID,library.libraryName,librarytype.libraryType,book.picture,book.libraryTypeID FROM book INNER JOIN library ON book.libraryID = library.libraryID INNER JOIN librarytype ON book.libraryTypeID = librarytype.libraryTypeID";
+			Pager<Bookinfo> lib=iBookService.getPagerBySql(sql, null, null, 1, book.size(), null, null);
+			bookInfoList=lib.getDatas();
+//		 librarytype=iLibraryTypeService.list("from Librarytype");
+		 ActionContext.getContext().getSession().put("lir", bookInfoList);
+		 ActionContext.getContext().getSession().put("librarytype", librarytype);
+		 return "borrow";
+	}
+	/**
+	 * 借书界面
+	 * @return
+	 */
+	private int bid;
+	public int getBid() {
+		return bid;
+	}
+	public void setBid(int bid) {
+		this.bid = bid;
+	}
+/**
+ * 正式借书界面
+ * @return
+ */
+	public String borrowjiemian(){
+		List<Bookinfo> bookInfoList=null;
+		String sql="SELECT book.bookID,book.bookOnlyCoding,book.bookName,book.price,book.author,book.publishingCompany,book.publishTime,book.stock,book.abstruct,book.libraryPagination,book.buildTime,book.libraryID,library.libraryName,librarytype.libraryType,book.picture,book.libraryTypeID FROM book INNER JOIN library ON book.libraryID = library.libraryID INNER JOIN librarytype ON book.libraryTypeID = librarytype.libraryTypeID where book.bookID="+bid+"";
+			Pager<Bookinfo> lib=iBookService.getPagerBySql(sql, null, null, 1, -1, null, null);
+			bookInfoList=lib.getDatas();
+		 ActionContext.getContext().put("lirlist", bookInfoList);
+		 return "interface";
+	}
+	
+      private int jbid;
+	 public int getJbid() {
+	   return jbid;
+      }
+     public void setJbid(int jbid) {
+    	this.jbid = jbid;
+     }private int selectroleid;
+
+	 public int getSelectroleid() {
+		return selectroleid;
+	 }
+	 public void setSelectroleid(int selectroleid) {
+		this.selectroleid = selectroleid;
+	 }
+	/**
+	 * 用户自己确认借书
+	 */
+	public String borrowOK(){
+	int userID= (Integer) ActionContext.getContext().getSession().get("userID");
+	 Book book1=new Book();
+	 book1= iBookService.load(jbid);
+	 if(book1.getStock()>0){
+	User user= iUserService.findById(userID);
+	if(user.isBorrow()){
+	Borrow bo=new Borrow();
+	/*bo.setActualReturnTime(ReturnTime());*/
+	bo.setBookId(jbid);
+	bo.setBorrowDate(BorrowDate());
+	bo.setRenewNumber(0);
+	bo.setUserId(userID);
+	bo.setWhetherExtended(false);
+	bo.setWhetherReturn(false);
+	bo.setBorrowingStatus(true);
+	if(user.getBorrowingAmount()<4){				
+		user.setBorrow(true);
+	}else if(user.getBorrowingAmount()==4){
+		user.setBorrow(false);
+	}else{
+	}
+	Borrow bb= iBorrowService.add(bo);
+	if(bb!=null){
+	user.setBorrowingAmount(user.getBorrowingAmount()+1);
+	user.setLibraryCard(user.getLibraryCard());
+	user.setMail(user.getMail());
+	if(user.getSex()=="1"){
+		user.setSex("男");
+	}else{
+		user.setSex("女");
+	}
+      user.setUserName(user.getUserName());
+      user.setPassword(user.getPassword());
+	  user.setPhone(user.getPhone());
+	  user.setRoleID(user.getRoleID());
+	  user.setUserID(user.getUserID());
+		iUserService.update(user);
+	       book1.setStock(book1.getStock()-1);
+	       iBookService.update(book1);
+	ActionContext.getContext().put("message", "借阅成功");
+	  }
+	}else{
+		ActionContext.getContext().put("message", "你的借阅数量达到了上限，请先还数，再借书");
+	}
+	 }else{
+			ActionContext.getContext().put("message", "此书本库存不足");
+		}
+		return "borrow";
+		
+	}private User user;
+	public User getUser(){
+		return user;
+	}public void setUser(User user){
+		this.user = user;
+	}
+	/**
+	 * 管理员借书
+	 */
+	
+	public String borrowguanliy(){
+	Book book1=new Book();
+	book1= iBookService.load(jbid);
+	  if(book1.getStock()>0){
+	String libraryCard=user.getLibraryCard();
+	String hql="from User u where userName=? and libraryCard=:libraryCard";
+	 Object[] arg=new Object[]{user.getUserName()};
+	 Map<String,Object> alias=new HashMap<String, Object>();
+	 alias.put("libraryCard",libraryCard);
+	 List<User> user=  iUserService.find(hql,arg,alias);
+	if(!user.isEmpty()){
+	if(user.get(0).isBorrow()){
+	Borrow bo=new Borrow();
+	bo.setBookId(jbid);
+	bo.setBorrowDate(BorrowDate());
+	bo.setRenewNumber(0);
+	bo.setUserId(user.get(0).getUserID());
+	bo.setWhetherExtended(false);
+	bo.setWhetherReturn(false);
+	bo.setBorrowingStatus(true);
+	if(user.get(0).getBorrowingAmount()<4){				
+		user.get(0).setBorrow(true);
+	}else if(user.get(0).getBorrowingAmount()==4){
+		user.get(0).setBorrow(false);
+	}else{
+	}
+	Borrow bb= iBorrowService.add(bo);
+	if(bb!=null){
+	user.get(0).setBorrowingAmount(user.get(0).getBorrowingAmount()+1);
+		iUserService.update(user.get(0));
+	       book1.setStock(book1.getStock()-1);
+	       iBookService.update(book1);
+		
+	  ActionContext.getContext().put("message", "借阅成功");
+	  }
+	}else{
+		ActionContext.getContext().put("message", "你的借阅数量达到了上限，请先还数，再借书");
+	}
+	}else{
+		ActionContext.getContext().put("message", "没有该用户");
+	}
+	 }else{
+	  ActionContext.getContext().put("message", "此书本库存不足");
+}
+       	selectBook();
+		return "bookManager";
+	}
+	public void selectBook(){
+		List<Bookinfo> bookInfoList=null;
+		String sql="SELECT book.bookID,book.bookOnlyCoding,book.bookName,book.price,book.author,book.publishingCompany,book.publishTime,book.stock,book.abstruct,book.libraryPagination,book.buildTime,book.libraryID,library.libraryName,librarytype.libraryType,book.picture,book.libraryTypeID FROM book INNER JOIN library ON book.libraryID = library.libraryID INNER JOIN librarytype ON book.libraryTypeID = librarytype.libraryTypeID";
+		Pager<Bookinfo> book1 = iBookService.getPagerBySql(sql, null, null, 1, 5, null, null);
+		bookInfoList = book1.getDatas();
+		 ActionContext.getContext().put("book", bookInfoList);
+	}
+	/**
+	 * 借阅天数
+	 * @return
+	 */
+	public Timestamp ReturnTime(){
+		SimpleDateFormat sf=null;
+		 Calendar c=null;
+		 Date date = null; 
+		 if(selectroleid==1){
+			  sf=new SimpleDateFormat("yyyy-MM-dd");
+			  c=Calendar.getInstance();
+			 c.add(c.DAY_OF_MONTH, 90);
+		 }else if(selectroleid==2){
+			 sf=new SimpleDateFormat("yyyy-MM-dd");
+			  c=Calendar.getInstance();
+			 c.add(c.DAY_OF_MONTH, 60);
+		 }else if(selectroleid==3){
+			 sf=new SimpleDateFormat("yyyy-MM-dd");
+			  c=Calendar.getInstance();
+			 c.add(c.DAY_OF_MONTH, 30);
+		 }else{
+		 }
+		try {
+			  date = sf.parse(sf.format(c.getTime()));
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		Timestamp timestamp = new Timestamp(date.getTime()); 
+		return timestamp;
+		
+	}
+	/**
+	 * 当前时间
+	 * @return
+	 */
+	public Timestamp BorrowDate(){
+		SimpleDateFormat sf=null;
+		 Calendar c=null;
+		 Date date = null; 
+			 sf=new SimpleDateFormat("yyyy-MM-dd");
+			  c=Calendar.getInstance();
+			 c.add(c.DAY_OF_MONTH, 0);
+		try {
+			  date = sf.parse(sf.format(c.getTime()));
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		Timestamp timestamp = new Timestamp(date.getTime()); 
+		return timestamp;
+	}
+	@Autowired
+	private IRoleService iRoleService;
+	private Role role =null;
+	List<UserBorrow> userinfolist=null;
+	/**
+	 * 自动修改是否归还
+	 */
+	public String gengaishifou(){
+		borrow=iBorrowService.list("from Borrow");
+		System.out.println("bb");
+		if(borrow!=null && borrow.size()>0){
+			for(int i =0;i<borrow.size();i++){
+				String sql="SELECT `user`.userID,`user`.roleID,role.borrowBooksLength,borrow.borrowDate,borrow.borrowID FROM `user` INNER JOIN role ON `user`.roleID = role.roleID INNER JOIN borrow ON borrow.userID = `user`.userID  where borrow.borrowID= '"+borrow.get(i).getBorrowId()+"' ";
+				Pager<UserBorrow> userinfo=iUserService.getPagerBySql1(sql, null, null, pager, borrow.size(), null, null);
+				userinfolist = userinfo.getDatas();
+				if(userinfolist.size()>0){
+					long days=fanhuishifouguoqi(userinfolist.get(0).getBorrowDate().toString());
+					if(days-userinfolist.get(0).getBorrowBooksLength()>0){
+						System.out.println(days-userinfolist.get(0).getBorrowBooksLength());
+						//更新订单状态  用户下单超过自定义天数天未支付 自动关闭该订单
+						borrow1=new Borrow();
+						borrow1=iBorrowService.load(userinfolist.get(0).getBorrowID());
+						borrow1.setWhetherExtended(true);
+						iBorrowService.update(borrow1);
+					}
+				}
+				
+			 }
+			}
+		return "更细拉";
+	}
+	/**
+	 * 借书借阅记录表 和更新 
+	 * @return
+	 */
+	public String borrowcord(){
+	    /* gengaishifou();*/
+	   	 List<Borrowinfo> borrowinfo=null;
+	 		try {
+	 			 if(mohulbtName!=null){
+	 				 mohulbtName = new String(mohulbtName.trim().getBytes("ISO-8859-1"), "UTF-8");
+	 					if(mohulbtName==null){
+	 						String sql="SELECT bw.borrowID,bw.userID,bw.bookID,bw.borrowDate,bw.whetherReturn,bw.actualReturnTime, bw.renewNumber,bw.whetherExtended,bw.borrowingStatus,us.userName,us.libraryCard,us.borrow,bk.bookName,us.borrowingAmount,us.roleID,bk.price,us.mail FROM borrow AS bw INNER JOIN book AS bk ON bk.bookID = bk.bookID AND bw.bookID = bk.bookID INNER JOIN `user` AS us ON bw.userID = us.userID";
+	 						Pager<Borrowinfo> lib=iBorrowService.getPagerBySql(sql, null, null, pager, size, "bw.actualReturnTime", "desc");
+	 						borrowinfo=lib.getDatas();
+	 						borrow=iBorrowService.list("from Borrow");
+	 				    	count=borrow.size();
+	 				    	 pagercount= count/size;
+	 						    if(count%size>0){
+	 						    	pagercount++;
+	 						    }else{
+	 						  }
+	 					}
+	 					else{
+	 						String sql="SELECT bw.borrowID,bw.userID,bw.bookID,bw.borrowDate,bw.whetherReturn,bw.actualReturnTime, bw.renewNumber,bw.whetherExtended,bw.borrowingStatus,us.userName,us.libraryCard,us.borrow,bk.bookName,us.borrowingAmount,us.roleID,bk.price ,us.mail FROM borrow AS bw INNER JOIN book AS bk ON bk.bookID = bk.bookID AND bw.bookID = bk.bookID INNER JOIN `user` AS us ON bw.userID = us.userID WHERE us.libraryCard LIKE '%"+mohulbtName+"%'";
+	 						Pager<Borrowinfo> lib=iBorrowService.getPagerBySql(sql, null, null, pager, size, null, null);
+	 						borrowinfo=lib.getDatas();
+	 						count=borrowinfo.size();
+	 				    	 pagercount= count/size;
+	 						    if(count%size>0){
+	 						    	pagercount++;
+	 						    }else{
+	 						  }
+	 					}
+	 			  }else{
+	 					if(mohulbtName==null){
+	 						String sql="SELECT bw.borrowID,bw.userID,bw.bookID,bw.borrowDate,bw.whetherReturn,bw.actualReturnTime, bw.renewNumber,bw.whetherExtended,bw.borrowingStatus,us.userName,us.libraryCard,us.borrow,bk.bookName,us.borrowingAmount,us.roleID,bk.price,us.mail FROM borrow AS bw INNER JOIN book AS bk ON bk.bookID = bk.bookID AND bw.bookID = bk.bookID INNER JOIN `user` AS us ON bw.userID = us.userID";
+		 					Pager<Borrowinfo> lib=iBorrowService.getPagerBySql(sql, null, null, pager, size, null, null);
+	 						borrowinfo=lib.getDatas();
+	 						borrow=iBorrowService.list("from Borrow");
+	 				    	count=borrow.size();
+	 				    	 pagercount= count/size;
+	 						    if(count%size>0){
+	 						    	pagercount++;
+	 						    }else{
+	 						  }
+	 					}
+						else{
+							String sql="SELECT bw.borrowID,bw.userID,bw.bookID,bw.borrowDate,bw.whetherReturn,bw.actualReturnTime, bw.renewNumber,bw.whetherExtended,bw.borrowingStatus,us.userName,us.libraryCard,us.borrow,bk.bookName,us.borrowingAmount,us.roleID,bk.price,us.mail FROM borrow AS bw INNER JOIN book AS bk ON bk.bookID = bk.bookID AND bw.bookID = bk.bookID INNER JOIN `user` AS us ON bw.userID = us.userID WHERE us.libraryCard LIKE '%"+mohulbtName+"%'";
+		 					Pager<Borrowinfo> lib=iBorrowService.getPagerBySql(sql, null, null, pager, size, null, null);
+	 						borrowinfo=lib.getDatas();
+	 						count=borrowinfo.size();
+	 				    	 pagercount= count/size;
+	 						    if(count%size>0){
+	 						    	pagercount++;
+	 						    }else{
+	 						  }
+						}
+	 			  }
+	 		} catch (UnsupportedEncodingException e) {
+	 			e.printStackTrace();
+	 		}
+	 		ActionContext.getContext().put("borrowinfo", borrowinfo);
+		return "borrowcord";
+	}
+	/**
+	 * 借书分页
+	 * @return
+	 */
+	public String borrowbook(){
+		 if(ee==1){ /* 这是首页情况*/
+			  pager=1;  
+		  }else
+	     if(ee==2){/* 上一页*/
+			if(pager>1){
+			  pager--;  
+			 }else{
+				 ActionContext.getContext().put("message", "已是首页");
+			 }
+		  }else
+		  if(ee==3){ /*下一页*/
+	     	if(pager<pagercount){
+			  pager++;  
+				  }else{
+					  ActionContext.getContext().put("message", "已是尾页");
+				  }
+		  }else 
+		    if(ee==4){
+			  pager=pagercount;  
+		  }else{
+			  
+		  }
+		  System.out.println(pagercount);
+	 System.out.println(pager);
+	 borrowcord();
+	return "borrowcord";
+}
+	@Autowired
+	private IOverrecordService iOverrecoedService;
+	@Autowired
+	private IFineService iFineService;
+	/**
+	 * 管理员还书确认还书
+	 */
+	public String huanshu(){
+		Borrow bo= iBorrowService.findById(broid);
+		long days=fanhuishifouguoqi(bo.getBorrowDate().toString());/*判断借阅天数*/
+        int overDay=0;
+        if(roid==1){
+        	if(days>90){
+        		 overDay=(int)(days-90);
+        	}
+        }else if(roid==2){
+             if(days>60){
+            	  overDay=(int)(days-60);
+        	}
+        }else if(roid==3){
+        	 if(days>30){
+        		  overDay=(int)(days-30);
+         	}
+        }
+        if(overDay>0){ /* 判断是否超期， 如果超出超期记录和罚款一起新增*/ 
+        	Overrecord ovre=new  Overrecord();
+        	ovre.setBookId(bid);
+        	ovre.setBorrowId(broid);
+        	ovre.setOverDueNumber(overDay);
+        	ovre.setUserId(uid);
+        	iOverrecoedService.add(ovre);
+        	Fine fi=new Fine();
+        	fi.setBookId(bid);
+        	fi.setBorrowId(broid);
+        	fi.setFineTypeId(1);
+        	fi.setForfeit(overDay*0.1);
+        	fi.setUserId(uid);
+        	fi.setPayment(false);
+        	iFineService.add(fi);
+        	bo.setWhetherExtended(true);
+        }else{
+        	bo.setWhetherExtended(false);
+        }
+        bo.setActualReturnTime(BorrowDate());
+    	bo.setBookId(bid);
+    	bo.setBorrowDate(bo.getBorrowDate());
+    	bo.setRenewNumber(0);
+    	bo.setUserId(uid);
+    	bo.setBorrowId(broid);
+    	bo.setWhetherReturn(true);
+    	bo.setBorrowingStatus(false);
+          iBorrowService.update(bo);
+    		User user= iUserService.findById(uid);
+    		if(user.getSex()=="1"){
+    			user.setSex("男");
+    		}else{
+    			user.setSex("女");
+    		}
+    	  user.setBorrowingAmount(user.getBorrowingAmount()-1);
+          user.setBorrow(true);
+    		iUserService.update(user);
+    		 Book book1=new Book();
+  	         book1= iBookService.load(bid);
+  	         book1.setStock(book1.getStock()+1);
+  	       iBookService.update(book1);
+    	ActionContext.getContext().put("message", "还书成功");
+    	 borrowcord();
+    	return "borrowcord";
+    	}
+	/**
+	 * 报废处理
+	 * @return
+	 */
+	public String baofei(){
+		Borrow bo= iBorrowService.findById(broid);
+		long days=fanhuishifouguoqi(bo.getBorrowDate().toString());/*判断借阅天数*/
+        int overDay=0;
+        if(roid==1){
+        	if(days>90){
+        		 overDay=(int)(days-90);
+        	}
+        }else if(roid==2){
+             if(days>60){
+            	  overDay=(int)(days-60);
+        	}
+        }else if(roid==3){
+        	 if(days>30){
+        		  overDay=(int)(days-30);
+         	}
+        }
+        if(overDay>0){ /* 判断是否超期， 如果超出超期记录新增*/ 
+        	Overrecord ovre=new  Overrecord();
+        	ovre.setBookId(bid);
+        	ovre.setBorrowId(broid);
+        	ovre.setOverDueNumber(overDay);
+        	ovre.setUserId(uid);
+        	iOverrecoedService.add(ovre);
+        	bo.setWhetherExtended(true);
+        }else{
+        	bo.setWhetherExtended(false);
+        }
+    	Fine fi=new Fine();
+    	fi.setBookId(bid);
+    	fi.setBorrowId(broid);
+    	fi.setFineTypeId(2);
+    	fi.setForfeit(price);
+    	fi.setUserId(uid);
+    	fi.setPayment(false);
+    	iFineService.add(fi);
+        bo.setActualReturnTime(BorrowDate());
+    	bo.setBookId(bid);
+    	bo.setBorrowDate(bo.getBorrowDate());
+    	bo.setRenewNumber(0);
+    	bo.setUserId(uid);
+    	bo.setBorrowId(broid);
+    	bo.setWhetherReturn(true);
+    	bo.setBorrowingStatus(false);
+          iBorrowService.update(bo);
+    		User user= iUserService.findById(uid);
+    		if(user.getSex()=="1"){
+    			user.setSex("男");
+    		}else{
+    			user.setSex("女");
+    		}
+    	  user.setBorrowingAmount(user.getBorrowingAmount()-1);
+          user.setBorrow(true);
+    		iUserService.update(user);
+    		Loselibrary lose=new Loselibrary();
+    		lose.setUserId(uid);
+    		lose.setLibraryId(bid);
+    		lose.setBorrowId(broid);
+    		lose.setCreateTime(BorrowDate());
+    		lose.setLibraryLoseId(1);
+    		iLosetlibraryService.add(lose);
+    	ActionContext.getContext().put("message", "还书成功");
+    	 borrowcord();
+    	return "borrowcord";
+    	}
+	  
+	/**
+	 * 超期付款  
+	 */
+	 public String chaoqifukaun(){
+		 List<Fineinfo> fineinfo=null;
+		 String message=null;
+			String sql="SELECT fine.fineID,fine.userID,fine.bookID,fine.borrowID,fine.forfeit,fine.fineTypeID,fine.payment,`user`.userName,book.bookName,book.price FROM fine INNER JOIN `user` ON fine.userID = `user`.userID INNER JOIN book ON fine.bookID = book.bookID WHERE fine.borrowID LIKE '%"+broid+"%'";         
+			Pager<Fineinfo> lib=iFineService.getPagerBySql(sql, null, null, 1, -1, "bw.actualReturnTime", "desc");
+			if(lib.getTotal()>0){
+				fineinfo=lib.getDatas();
+				 ActionContext.getContext().put("fineinfo", fineinfo);
+				 message="payment";
+			}else{
+				 message="borrowcord";
+				 ActionContext.getContext().put("message", "此用户借书没有过期，或者没有还书");
+				 borrowcord();
+			}	
+		 return message;
+	 }
+	 /**
+		 * 超期确认付款  用list的对象赋值给单个对象
+		 */
+		 public String querenfukaun(){
+			String hql="from Fine where borrowId=?";
+			 Object[] arg=new Object[]{broid};
+			 List<Fine> fi= iFineService.find(hql,arg,null);
+			 ActionContext.getContext().put("payment", fi);
+			 if(fi.get(0).isPayment()==true){
+				 ActionContext.getContext().put("message", "不能从复确认");
+			 }else{
+			 for(Fine b : fi){
+				 b.setBorrowId(b.getBorrowId());
+		        	b.setFineTypeId(b.getFineTypeId());
+		        	b.setForfeit(b.getForfeit());
+		        	b.setUserId(b.getUserId());
+		        	b.setFineId(b.getFineId());
+		        	b.setPayment(true);
+		        	iFineService.update(b);
+		        	 ActionContext.getContext().put("message", "付款成功");
+				}
+			 }
+			
+			 borrowcord();
+			 return "borrowcord";
+		 }
+	/**
+	 * 计算借阅天数
+	 * @param date
+	 * @return
+	 */
+	public long fanhuishifouguoqi(String date){
+		DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+		Date one;  
+        Date two; 
+        long days=0;  
+        try {  
+            one = df.parse(date); /*借阅时间 */
+            two = df.parse(BorrowDate().toString());  /* 当前时间*/
+            long time1 = one.getTime();  
+            long time2 = two.getTime();  
+            long diff = 0 ;  
+            if(time1<time2) {  
+                diff = time2 - time1;  
+            } else { 
+            } 
+            days = diff / (1000 * 60 * 60 * 24);  
+        } catch (ParseException e) {  
+            e.printStackTrace();  
+        }
+		return days;
+	}
+	
+	private int ee;
+	public int getEe() {
+		return ee;
+	}
+	public void setEe(int ee) {
+		this.ee = ee;
+	}
+	
+	private  int pager=1;
+	public int getPager() {
+		return pager;
+	}
+	public void setPager(int pager) {
+		this.pager = pager;
+	}
+	
+	
+	private  int pagercount=1;
+	public int getPagercount() {
+		return pagercount;
+	}
+	public void setPagercount(int pagercount) {
+		this.pagercount = pagercount;
+	}
+	
+	
+    private String mohulbtName;
+	public String getMohulbtName() {
+		return mohulbtName;
+	}
+	public void setMohulbtName(String mohulbtName) {
+		this.mohulbtName = mohulbtName;
+	}
+	
+	private int uid;
+	public int getUid() {
+		return uid;
+	}public void setUid(int uid) {
+		this.uid = uid;
+	}
+	private int broid;
+	public int getBroid() {
+		return broid;
+	}
+	public void setBroid(int broid) {
+		this.broid = broid;
+	}
+	private int roid;
+	public int getRoid() {
+		return roid;
+	}
+	public void setRoid(int roid) {
+		this.roid = roid;
+	}
+	private Double price;
+	public Double getPrice() {
+		return price;
+	}
+	public void setPrice(Double price) {
+		this.price = price;
+	}
+	
+	private String Email;
+	public String getEmail() {
+		return Email;
+	}
+	public void setEmail(String email) {
+		Email = email;
+	}
+}

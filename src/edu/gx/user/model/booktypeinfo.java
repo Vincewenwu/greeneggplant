@@ -1,0 +1,40 @@
+package edu.gx.user.model;
+
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
+
+
+public class booktypeinfo  {
+
+
+	private Integer bookID;
+	private String libraryType;
+    private Integer libraryTypeID;
+	public Integer getBookID() {
+		return bookID;
+	}
+	public void setBookID(Integer bookID) {
+		this.bookID = bookID;
+	}
+	public String getLibraryType() {
+		return libraryType;
+	}
+	public void setLibraryType(String libraryType) {
+		this.libraryType = libraryType;
+	}
+	public Integer getLibraryTypeID() {
+		return libraryTypeID;
+	}
+	public void setLibraryTypeID(Integer libraryTypeID) {
+		this.libraryTypeID = libraryTypeID;
+	}
+
+	
+}
